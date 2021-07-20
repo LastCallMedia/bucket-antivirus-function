@@ -62,7 +62,7 @@ def object_previously_scanned(s3_client, s3_bucket_name, key_name):
 
 # Scan an S3 object for viruses by invoking the lambda function
 # Skip any objects that have already been scanned
-def scan_object(lambda_client, lambda_function_name, s3_bucket_name, key_name):
+def scan_object(lambda_client, lambda_function_name, s3_bucket_name, key_name, all):
 
     print("Scanning: {}/{}".format(s3_bucket_name, key_name))
     s3_event = format_s3_event(s3_bucket_name, key_name)
@@ -110,6 +110,15 @@ def main(lambda_function_name, s3_bucket_name, limit, all):
     for key_name in s3_object_list:
         scan_object(lambda_client, lambda_function_name, s3_bucket_name, key_name, all)
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Scan an S3 bucket for viruses.")
@@ -122,7 +131,7 @@ if __name__ == "__main__":
         "--s3-bucket-name", required=True, help="The name of the S3 bucket to scan"
     )
     parser.add_argument("--limit", type=int, help="The number of records to limit to")
-    parser.add_argument("--all", required=False, help="Rescan all objects in bucket")
+    parser.add_argument("--all", type=str2bool, nargs='?', const=True, default=False, help="Rescan all objects in bucket")
     args = parser.parse_args()
 
-    main(args.lambda_function_name, args.s3_bucket_name, args.limit)
+    main(args.lambda_function_name, args.s3_bucket_name, args.limit, args.all)
