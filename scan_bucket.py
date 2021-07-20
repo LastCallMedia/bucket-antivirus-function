@@ -43,7 +43,7 @@ def get_objects(s3_client, s3_bucket_name):
         for key in s3_list_objects_result["Contents"]:
             key_name = key["Key"]
             # Don't include objects that have been scanned
-            if not object_previously_scanned(s3_client, s3_bucket_name, key_name):
+            if not object_previously_scanned(s3_client, s3_bucket_name, key_name) or all:
                 s3_object_list.append(key_name)
 
     return s3_object_list
@@ -86,7 +86,7 @@ def format_s3_event(s3_bucket_name, key_name):
     return s3_event
 
 
-def main(lambda_function_name, s3_bucket_name, limit):
+def main(lambda_function_name, s3_bucket_name, limit, all):
     # Verify the lambda exists
     lambda_client = boto3.client("lambda", endpoint_url=LAMBDA_ENDPOINT)
     try:
@@ -108,7 +108,7 @@ def main(lambda_function_name, s3_bucket_name, limit):
     if limit:
         s3_object_list = s3_object_list[: min(limit, len(s3_object_list))]
     for key_name in s3_object_list:
-        scan_object(lambda_client, lambda_function_name, s3_bucket_name, key_name)
+        scan_object(lambda_client, lambda_function_name, s3_bucket_name, key_name, all)
 
 
 if __name__ == "__main__":
@@ -122,6 +122,7 @@ if __name__ == "__main__":
         "--s3-bucket-name", required=True, help="The name of the S3 bucket to scan"
     )
     parser.add_argument("--limit", type=int, help="The number of records to limit to")
+    parser.add_argument("--all", required=False, help="Rescan all objects in bucket")
     args = parser.parse_args()
 
     main(args.lambda_function_name, args.s3_bucket_name, args.limit)
